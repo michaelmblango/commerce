@@ -1,0 +1,57 @@
+{% extends "auctions/layout.html" %}
+
+{% block title %}Active Listings{% endblock %}
+
+{% block body %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="fas fa-fire text-danger"></i> Active Listings</h1>
+    {% if user.is_authenticated %}
+    <a href="{% url 'auctions:create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create New Listing
+    </a>
+    {% endif %}
+</div>
+
+{% if listings %}
+<div class="row">
+    {% for listing in listings %}
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            {% if listing.image_url %}
+            <img src="{{ listing.image_url }}" class="card-img-top" alt="{{ listing.title }}">
+            {% else %}
+            <div class="card-img-top d-flex align-items-center justify-content-center"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-image fa-3x text-white"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ listing.title }}</h5>
+                <p class="card-text">{{ listing.description|truncatewords:15 }}</p>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="price">${{ listing.current_price }}</span>
+                    {% if listing.category %}
+                    <span class="badge badge-primary">{{ listing.category.name }}</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'auctions:listing' listing.id %}" class="btn btn-primary btn-block">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-box-open"></i>
+    <h3>No active listings</h3>
+    <p class="text-muted">Be the first to create a listing!</p>
+    {% if user.is_authenticated %}
+    <a href="{% url 'auctions:create' %}" class="btn btn-primary mt-3">
+        <i class="fas fa-plus"></i> Create Listing
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

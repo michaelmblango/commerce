@@ -1,0 +1,149 @@
+{% extends "auctions/layout.html" %}
+
+{% block title %}{{ listing.title }}{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            {% if listing.image_url %}
+            <img src="{{ listing.image_url }}" class="card-img-top" alt="{{ listing.title }}"
+                style="max-height: 400px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top d-flex align-items-center justify-content-center"
+                style="height: 400px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-image fa-5x text-white"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="mb-0">{{ listing.title }}</h2>
+                    {% if user.is_authenticated %}
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" name="watchlist"
+                            class="btn {% if is_watching %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                            <i class="fas fa-heart"></i>
+                            {% if is_watching %}Remove{% else %}Add to Watchlist{% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                {% if not listing.active %}
+                <div class="alert alert-info">
+                    <i class="fas fa-check-circle"></i> This auction has ended.
+                    {% if is_winner %}
+                    <strong>Congratulations! You won this auction!</strong>
+                    {% elif highest_bid %}
+                    Winner: <strong>{{ highest_bid.bidder.username }}</strong>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <p class="text-muted">Listed by: <strong>{{ listing.creator.username }}</strong></p>
+
+                {% if listing.category %}
+                <span class="badge badge-primary mb-3">{{ listing.category.name }}</span>
+                {% endif %}
+
+                <p class="mt-3">{{ listing.description }}</p>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card">
+            <div class="card-body">
+                <h4><i class="fas fa-comments"></i> Comments</h4>
+
+                {% if user.is_authenticated and listing.active %}
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <textarea name="comment" class="form-control" placeholder="Add a comment..."
+                            required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Post Comment
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if comments %}
+                {% for comment in comments %}
+                <div class="comment">
+                    <div class="d-flex justify-content-between">
+                        <span class="comment-author">{{ comment.commenter.username }}</span>
+                        <span class="comment-time">{{ comment.timestamp|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <p class="mb-0 mt-2">{{ comment.content }}</p>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">No comments yet. Be the first to comment!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4 class="mb-3">Current Price</h4>
+                <div class="price mb-3">${{ listing.current_price }}</div>
+                <p class="text-muted">{{ bid_count }} bid{% if bid_count != 1 %}s{% endif %}</p>
+
+                {% if user.is_authenticated and listing.active %}
+                {% if not is_creator %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Place Bid</label>
+                        <input type="number" name="bid_amount" class="form-control" step="0.01"
+                            min="{{ listing.current_price|add:0.01 }}" placeholder="Enter your bid" required>
+                        <small class="form-text text-muted">Minimum: ${{ listing.current_price|add:0.01 }}</small>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-gavel"></i> Place Bid
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-info">
+                    You are the creator of this listing.
+                </div>
+                {% if listing.active %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="close_listing" class="btn btn-danger btn-block"
+                        onclick="return confirm('Are you sure you want to close this listing?')">
+                        <i class="fas fa-times-circle"></i> Close Auction
+                    </button>
+                </form>
+                {% endif %}
+                {% endif %}
+                {% elif not user.is_authenticated %}
+                <a href="{% url 'auctions:login' %}" class="btn btn-primary btn-block">
+                    Log in to bid
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-info-circle"></i> Details</h5>
+                <hr>
+                <p><strong>Starting Bid:</strong> ${{ listing.starting_bid }}</p>
+                <p><strong>Listed:</strong> {{ listing.created_at|date:"M d, Y" }}</p>
+                <p><strong>Status:</strong>
+                    {% if listing.active %}
+                    <span class="badge badge-success">Active</span>
+                    {% else %}
+                    <span class="badge badge-danger">Closed</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
